@@ -1,17 +1,13 @@
-FROM ubuntu:14.04
-MAINTAINER Dr. Stefan Schimanski <stefan.schimanski@gmail.com>
-
+FROM debian:jessie
+MAINTAINER Andreas Krüger
 ENV DEBIAN_FRONTEND noninteractive
 
-# setup repos
-RUN echo "deb http://archive.ubuntu.com/ubuntu trusty main universe" > /etc/apt/sources.list
-RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a1bb943db
-RUN echo 'deb http://ftp.hosteurope.de/mirror/mariadb.org/repo/10.0/ubuntu trusty main' >> /etc/apt/sources.list
-RUN apt-get -y update
-
-# install packages
-RUN apt-get -y --no-install-recommends --no-install-suggests install host socat unzip ca-certificates wget
-RUN apt-get -y install mariadb-galera-server-10.0 galera-3 mariadb-client xtrabackup
+RUN apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A
+RUN echo "deb http://repo.percona.com/apt jessie main" >> /etc/apt/sources.list
+RUN echo "deb-src http://repo.percona.com/apt jessie main" >> /etc/apt/sources.list
+RUN apt-get update -yqq
+RUN apt-get install --no-install-recommends --no-install-suggests -yqq host socat unzip ca-certificates wget curl
+RUN apt-get install -y percona-xtradb-cluster-client-5.6 percona-xtradb-cluster-server-5.6 percona-xtradb-cluster-galera-3.x percona-xtrabackup
 
 # install galera-healthcheck
 RUN wget -O /bin/galera-healthcheck 'https://github.com/sttts/galera-healthcheck/releases/download/v20150303/galera-healthcheck_linux_amd64'
@@ -26,9 +22,18 @@ ADD conf.d/galera.cnf /etc/mysql/conf.d/galera.cnf
 RUN chmod 0644 /etc/mysql/conf.d/utf8.cnf
 RUN chmod 0644 /etc/mysql/conf.d/galera.cnf
 
+# Install etcd
+WORKDIR /
+RUN curl -skL https://github.com/coreos/etcd/releases/download/v2.2.0/etcd-v2.2.0-linux-amd64.tar.gz | tar xz
+RUN /etcd-v2.2.0-linux-amd64/etcdctl
+
 EXPOSE 3306 4444 4567 4568
+
 VOLUME ["/var/lib/mysql"]
+
 COPY mysqld.sh /mysqld.sh
 COPY start /start
+
 RUN chmod 555 /start /mysqld.sh
+
 ENTRYPOINT ["/start"]
