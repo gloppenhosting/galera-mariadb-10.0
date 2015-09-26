@@ -28,7 +28,7 @@ fi
 
 # Start mysqld
 
-exec $MYSQLD $OPT --wsrep_start_position=$wsrep_start_position
+exec $MYSQLD $OPT #--wsrep_start_position=$wsrep_start_position
 
 # We should never end in here
 
